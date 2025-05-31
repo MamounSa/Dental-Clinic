@@ -1,0 +1,6 @@
+@Dental_Clinic_HostAddress = http://localhost:5184
+
+GET {{Dental_Clinic_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
