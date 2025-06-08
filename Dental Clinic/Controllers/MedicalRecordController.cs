@@ -1,61 +1,68 @@
-﻿[Route("api/medicalRecords")]
+﻿
+
 [ApiController]
+[Route("api/[controller]")]
 public class MedicalRecordController : ControllerBase
 {
-    private readonly IMedicalRecordService _medicalRecordService;
+    private readonly IMedicalRecordService _service;
 
-    public MedicalRecordController(IMedicalRecordService medicalRecordService)
+    public MedicalRecordController(IMedicalRecordService service)
     {
-        _medicalRecordService = medicalRecordService;
+        _service = service;
     }
 
-    [HttpGet("all")]
-    public async Task<ActionResult<IEnumerable<MedicalRecordDto>>> GetAllMedicalRecords()
+    /// <summary>
+    /// Get all medical records.
+    /// </summary>
+    [HttpGet]
+    public async Task<IActionResult> GetAll()
     {
-        var records = await _medicalRecordService.GetAllMedicalRecordsAsync();
-        if (!records.Any()) return NotFound();
-        return Ok(records);
+        return Ok(await _service.GetAllAsync());
     }
 
+    /// <summary>
+    /// Get a medical record by its ID.
+    /// </summary>
     [HttpGet("{id}")]
-    public async Task<ActionResult<MedicalRecordDto>> GetMedicalRecordById(int id)
+    public async Task<IActionResult> GetById(int id)
     {
-        var record = await _medicalRecordService.GetMedicalRecordByIdAsync(id);
-        if (record == null) return NotFound();
-        return Ok(record);
+        var result = await _service.GetByIdAsync(id);
+        return result == null ? NotFound() : Ok(result);
     }
 
-    [HttpPost("add")]
-    public async Task<ActionResult<int?>> AddMedicalRecord([FromBody] MedicalRecordDto medicalRecordDto)
+    /// <summary>
+    /// Create a new medical record.
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> Create([FromBody] CreateMedicalRecordDto dto)
     {
-        var recordId = await _medicalRecordService.AddMedicalRecordAsync(medicalRecordDto);
-        if (recordId == null) return BadRequest("Failed to add medical record.");
-        return CreatedAtAction(nameof(GetMedicalRecordById), new { id = recordId }, recordId);
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var id = await _service.AddAsync(dto);
+        return CreatedAtAction(nameof(GetById), new { id }, null);
     }
 
-    [HttpPut("update/{id}")]
-    public async Task<ActionResult<bool>> UpdateMedicalRecord(int id, [FromBody] MedicalRecordDto medicalRecordDto)
+    /// <summary>
+    /// Update an existing medical record.
+    /// </summary>
+    [HttpPut]
+    public async Task<IActionResult> Update([FromBody] UpdateMedicalRecordDto dto)
     {
-        if (id != medicalRecordDto.Id) return BadRequest();
-        var result = await _medicalRecordService.UpdateMedicalRecordAsync(medicalRecordDto);
-        if (!result) return NotFound();
-        return Ok(result);
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var success = await _service.UpdateAsync(dto);
+        return success ? NoContent() : NotFound();
     }
 
-    [HttpDelete("delete/{id}")]
-    public async Task<ActionResult<bool>> DeleteMedicalRecord(int id)
+    /// <summary>
+    /// Delete a medical record.
+    /// </summary>
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(int id)
     {
-        var result = await _medicalRecordService.DeleteMedicalRecordAsync(id);
-        if (!result) return NotFound();
-        return Ok(result);
+        var success = await _service.DeleteAsync(id);
+        return success ? NoContent() : NotFound();
     }
-
-    [HttpGet("search/byPatientName")]
-    public async Task<ActionResult<IEnumerable<MedicalRecordDto>>> SearchByPatientName([FromQuery] string patientName)
-    {
-        var records = await _medicalRecordService.SearchByPatientNameAsync(patientName);
-        if (!records.Any()) return NotFound();
-        return Ok(records);
-    }
-
 }

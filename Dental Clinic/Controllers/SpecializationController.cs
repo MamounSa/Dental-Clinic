@@ -1,52 +1,61 @@
-﻿[Route("api/specializations")]
-[ApiController]
-public class SpecializationController : ControllerBase
-{
-    private readonly ISpecializationService _specializationService;
-
-    public SpecializationController(ISpecializationService specializationService)
+﻿
+    [ApiController]
+    [Route("api/[controller]")]
+    public class SpecializationController : ControllerBase
     {
-        _specializationService = specializationService;
-    }
+        private readonly ISpecializationService _service;
 
-    [HttpGet("all")]
-    public async Task<ActionResult<IEnumerable<SpecializationDto>>> GetAllSpecializations()
-    {
-        var specializations = await _specializationService.GetAllSpecializationsAsync();
-        if (!specializations.Any()) return NotFound();
-        return Ok(specializations);
-    }
+        public SpecializationController(ISpecializationService service)
+        {
+            _service = service;
+        }
 
-    [HttpGet("{id}")]
-    public async Task<ActionResult<SpecializationDto>> GetSpecializationById(int id)
-    {
-        var specialization = await _specializationService.GetSpecializationByIdAsync(id);
-        if (specialization == null) return NotFound();
-        return Ok(specialization);
-    }
+        /// <summary>
+        /// Get all specializations.
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetAll()
+            => Ok(await _service.GetAllAsync());
 
-    [HttpPost("add")]
-    public async Task<ActionResult<int?>> AddSpecialization([FromBody] SpecializationDto specializationDto)
-    {
-        var specializationId = await _specializationService.AddSpecializationAsync(specializationDto);
-        if (specializationId == null) return BadRequest("Failed to add specialization.");
-        return CreatedAtAction(nameof(GetSpecializationById), new { id = specializationId }, specializationId);
-    }
+        /// <summary>
+        /// Get specialization by ID.
+        /// </summary>
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById(int id)
+        {
+            var result = await _service.GetByIdAsync(id);
+            return result == null ? NotFound() : Ok(result);
+        }
 
-    [HttpPut("update/{id}")]
-    public async Task<ActionResult<bool>> UpdateSpecialization(int id, [FromBody] SpecializationDto specializationDto)
-    {
-        if (id != specializationDto.Id) return BadRequest();
-        var result = await _specializationService.UpdateSpecializationAsync(specializationDto);
-        if (!result) return NotFound();
-        return Ok(result);
-    }
+        /// <summary>
+        /// Create new specialization.
+        /// </summary>
+        [HttpPost]
+        public async Task<IActionResult> Create([FromBody] CreateSpecializationDto dto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+            var id = await _service.AddAsync(dto);
+            return CreatedAtAction(nameof(GetById), new { id }, null);
+        }
 
-    [HttpDelete("delete/{id}")]
-    public async Task<ActionResult<bool>> DeleteSpecialization(int id)
-    {
-        var result = await _specializationService.DeleteSpecializationAsync(id);
-        if (!result) return NotFound();
-        return Ok(result);
+        /// <summary>
+        /// Update existing specialization.
+        /// </summary>
+        [HttpPut]
+        public async Task<IActionResult> Update([FromBody] UpdateSpecializationDto dto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+            var success = await _service.UpdateAsync(dto);
+            return success ? NoContent() : NotFound();
+        }
+
+        /// <summary>
+        /// Delete specialization by ID.
+        /// </summary>
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var success = await _service.DeleteAsync(id);
+            return success ? NoContent() : NotFound();
+        }
     }
-}

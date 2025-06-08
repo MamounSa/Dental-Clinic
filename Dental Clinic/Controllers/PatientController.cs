@@ -1,99 +1,85 @@
-﻿[Route("api/[controller]")]
+﻿using Microsoft.AspNetCore.Mvc;
+
+/// <summary>
+/// Controller for managing patient-related operations.
+/// </summary>
 [ApiController]
+[Route("api/[controller]")]
 public class PatientController : ControllerBase
 {
-    private readonly IPatientService _patientService;
+    private readonly IPatientService _service;
 
-    public PatientController(IPatientService patientService)
+    public PatientController(IPatientService service)
     {
-        _patientService = patientService;
+        _service = service;
     }
 
+    /// <summary>
+    /// Gets all patients.
+    /// </summary>
+    /// <returns>List of patients.</returns>
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<PatientDto>>> GetAllPatients()
-    {
-        var patients = await _patientService.GetAllPatientsAsync();
-        if (!patients.Any())
-            return NotFound();
+    public async Task<IActionResult> GetAll() => Ok(await _service.GetAllAsync());
 
-        return Ok(patients);
-    }
-
+    /// <summary>
+    /// Gets a patient by ID.
+    /// </summary>
+    /// <param name="id">Patient ID.</param>
+    /// <returns>Patient details if found; otherwise, 404 Not Found.</returns>
     [HttpGet("{id}")]
-    public async Task<ActionResult<PatientDto>> GetPatientById(int id)
+    public async Task<IActionResult> GetById(int id)
     {
-        var patient = await _patientService.GetPatientByIdAsync(id);
-        if (patient == null)
-            return NotFound();
-        return Ok(patient);
+        var patient = await _service.GetByIdAsync(id);
+        return patient == null ? NotFound() : Ok(patient);
     }
 
-    [HttpPost("add")]
-
-    public async Task<ActionResult<int?>> AddPatient([FromBody] PatientDto patientDto)
+    /// <summary>
+    /// Searches patients by name.
+    /// </summary>
+    /// <param name="name">Full or partial patient name.</param>
+    /// <returns>List of matching patients.</returns>
+    [HttpGet("search")]
+    public async Task<IActionResult> SearchByName([FromQuery] string name)
     {
-        var patientId = await _patientService.AddPatientAsync(patientDto);
-        if (patientId == null)
-            return BadRequest("Failed to add patient.");
-
-        return CreatedAtAction(nameof(GetPatientById), new { id = patientId }, patientId);
-    }
-
-    [HttpPut("update/{id}")]
-    public async Task<ActionResult<bool>> UpdatePatient(int id, [FromBody] PatientDto patientDto)
-    {
-        if (id != patientDto.Id)
-            return BadRequest();
-
-        var result = await _patientService.UpdatePatientAsync(patientDto);
-        if (!result)
-            return NotFound();
-
+        var result = await _service.SearchByNameAsync(name);
         return Ok(result);
     }
 
-    [HttpDelete("delete/{id}")]
-    public async Task<ActionResult<bool>> DeletePatient(int id)
+    /// <summary>
+    /// Creates a new patient record.
+    /// </summary>
+    /// <param name="dto">Patient creation data.</param>
+    /// <returns>201 Created with patient ID if successful.</returns>
+    [HttpPost]
+    public async Task<IActionResult> Create([FromBody] CreatePatientDto dto)
     {
-        var result = await _patientService.DeletePatientAsync(id);
-        if (!result)
-            return NotFound();
-
-        return Ok(result);
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        var id = await _service.AddAsync(dto);
+        return CreatedAtAction(nameof(GetById), new { id }, null);
     }
 
-    // 🟢 البحث عن المرضى حسب الاسم
-    [HttpGet("search/byName")]
-    public async Task<ActionResult<IEnumerable<PatientDto>>> SearchByName([FromQuery] string name)
+    /// <summary>
+    /// Updates an existing patient record.
+    /// </summary>
+    /// <param name="dto">Updated patient data.</param>
+    /// <returns>NoContent (204) if successful; NotFound (404) if not found.</returns>
+    [HttpPut]
+    public async Task<IActionResult> Update([FromBody] UpdatePatientDto dto)
     {
-        var patients = await _patientService.SearchByNameAsync(name);
-        if (!patients.Any())
-            return NotFound();
-
-        return Ok(patients);
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        var success = await _service.UpdateAsync(dto);
+        return success ? NoContent() : NotFound();
     }
 
-    // 🟢 البحث عن المرضى حسب البريد الإلكتروني
-    [HttpGet("search/byEmail")]
-    public async Task<ActionResult<IEnumerable<PatientDto>>> SearchByEmail([FromQuery] string email)
+    /// <summary>
+    /// Deletes a patient by ID.
+    /// </summary>
+    /// <param name="id">Patient ID.</param>
+    /// <returns>NoContent (204) if deleted; NotFound (404) if not found.</returns>
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(int id)
     {
-        var patients = await _patientService.SearchByEmailAsync(email);
-        if (!patients.Any())
-            return NotFound();
-
-        return Ok(patients);
-    }
-
-    // 🟢 البحث عن المرضى حسب رقم الهاتف
-    [HttpGet("search/byPhone")]
-    public async Task<ActionResult<IEnumerable<PatientDto>>> SearchByPhone([FromQuery] string phoneNumber)
-    {
-        var patients = await _patientService.SearchByPhoneAsync(phoneNumber);
-        if (!patients.Any())
-            return NotFound();
-
-        return Ok(patients);
+        var success = await _service.DeleteAsync(id);
+        return success ? NoContent() : NotFound();
     }
 }
-
-

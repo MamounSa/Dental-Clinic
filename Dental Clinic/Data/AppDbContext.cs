@@ -16,6 +16,12 @@
     public DbSet<PaymentMethod> PaymentMethods { get; set; }
     public DbSet<MedicalRecord> MedicalRecords { get; set; }
     public DbSet<MedicalImage> MedicalImages { get; set; }
+
+    public DbSet<DentalModel> DentalModels { get; set; }
+
+    public DbSet<DentalTreatment> DentalTreatments { get; set; }
+
+    public DbSet<User> Users { get; set; }
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         base.OnConfiguring(optionsBuilder);

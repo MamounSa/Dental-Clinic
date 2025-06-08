@@ -1,4 +1,7 @@
-﻿public static class SeedData
+﻿using System.Numerics;
+using Microsoft.EntityFrameworkCore;
+
+public static class SeedData
 {
     public static void Initialize(AppDbContext context)
     {
@@ -112,5 +115,104 @@
                 new MedicalImage { ImageUrl = "https://example.com/images/wisdom_tooth.jpg", Description = "صورة لمكان ضرس العقل بعد الجراحة", MedicalRecordId = 3 }
             });
         context.SaveChanges();
+
+        if (!context.DentalModels.Any())
+        {
+            context.DentalModels.AddRange(
+                new DentalModel
+                {
+                  
+                    ToothNumber = 11,
+                    Condition = "سليم",
+                    PatientId = 1,
+                    MedicalRecordId = 1,
+                    
+                },
+                new DentalModel
+                {
+                    ToothNumber = 26,
+                    Condition = "مسوس",
+                    PatientId = 2,
+                    MedicalRecordId = 2,
+                    
+                }
+            );
+            context.SaveChanges();
+        }
+
+        if (!context.DentalTreatments.Any())
+        {
+            var treatments = new List<DentalTreatment>
+        {
+            new DentalTreatment
+            {
+                TreatmentType = "تنظيف",
+                TreatmentDate = DateTime.Now.AddDays(-7),
+                Notes = "تنظيف الأسنان بشكل عام",
+                DoctorId = 1,
+                DentalModelId = 1
+            },
+            new DentalTreatment
+            {
+                TreatmentType = "علاج عصب",
+                TreatmentDate = DateTime.Now.AddDays(-3),
+                Notes = "جلسة أولى لعلاج العصب",
+                DoctorId = 1,
+                DentalModelId = 1
+            }
+        };
+
+            context.DentalTreatments.AddRange(treatments);
+            context.SaveChanges();
+        }
+        if (!context.Users.Any())
+        {
+
+            CreatePasswordHash("admin123", out var hash1, out var salt1);
+            CreatePasswordHash("user123", out var hash2, out var salt2);
+
+            context.Users.AddRange(
+                new User
+                {
+                    Username = "admin",
+                    PasswordHash = hash1,
+                    PasswordSalt = salt1,
+                    Role = "Admin",
+                    DateofBirth = new DateTime(2025, 5, 20, 14, 30, 0)
+                },
+                new User
+                {
+                    Username = "user",
+                    PasswordHash = hash2,
+                    PasswordSalt = salt2,
+                    Role = "User",
+                    DateofBirth = new DateTime(2025, 5, 20, 14, 30, 0)
+                }
+            );
+            context.SaveChanges();
+
+
+        }
+
     }
+
+    private static void CreatePasswordHash(string password, out byte[] passwordHash, out byte[] passwordSalt)
+    {
+        using var hmac = new System.Security.Cryptography.HMACSHA512();
+        passwordSalt = hmac.Key;
+        passwordHash = hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password));
+    }
+}
+
+
+
+
+public static class ModelBuilderExtensions
+{
+    public static void SeedUsers(this ModelBuilder modelBuilder)
+    {
+     
+    }
+
+  
 }
