@@ -10,4 +10,6 @@
     public Patient Patient { get; set; }
 
     public ICollection<MedicalImage> Images { get; set; } = new List<MedicalImage>(); // ✅ إضافة الصور
+    public ICollection<DentalModel> DentalModels { get; set; } = new List<DentalModel>(); 
+
 }

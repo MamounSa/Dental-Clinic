@@ -12,6 +12,9 @@ public class Patient
     public string HealthStatus { get; set; }
 
     public ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
+
+    public ICollection<DentalModel> DentalModels { get; set; } = new List<DentalModel>();
+
     public MedicalRecord MedicalRecords { get;  set; }
 }
 

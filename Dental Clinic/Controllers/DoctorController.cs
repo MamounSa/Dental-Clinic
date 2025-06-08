@@ -1,84 +1,100 @@
-﻿[Route("api/doctors")]
-[ApiController]
-public class DoctorController : ControllerBase
+﻿using Microsoft.AspNetCore.Mvc;
+
+namespace YourNamespace.Controllers
 {
-    private readonly IDoctorService _doctorService;
-
-    public DoctorController(IDoctorService doctorService)
+    /// <summary>
+    /// Controller for managing doctor-related operations.
+    /// </summary>
+    [ApiController]
+    [Route("api/[controller]")]
+    public class DoctorController : ControllerBase
     {
-        _doctorService = doctorService;
-    }
+        private readonly IDoctorService _service;
 
-    [HttpGet("all")]
-    public async Task<ActionResult<IEnumerable<DoctorDto>>> GetAllDoctors()
-    {
-        var doctors = await _doctorService.GetAllDoctorsAsync();
-        if (!doctors.Any()) return NotFound();
-        return Ok(doctors);
-    }
+        public DoctorController(IDoctorService service)
+        {
+            _service = service;
+        }
 
-    [HttpGet("{id}")]
-    public async Task<ActionResult<DoctorDto>> GetDoctorById(int id)
-    {
-        var doctor = await _doctorService.GetDoctorByIdAsync(id);
-        if (doctor == null) return NotFound();
-        return Ok(doctor);
-    }
+        /// <summary>
+        /// Gets all doctors.
+        /// </summary>
+        /// <returns>List of doctors.</returns>
+        [HttpGet]
+        public async Task<IActionResult> GetAll() => Ok(await _service.GetAllAsync());
 
-    [HttpPost("add")]
-    public async Task<ActionResult<int?>> AddDoctor([FromBody] DoctorDto doctorDto)
-    {
-        var doctorId = await _doctorService.AddDoctorAsync(doctorDto);
-        if (doctorId == null) return BadRequest("Failed to add doctor.");
-        return CreatedAtAction(nameof(GetDoctorById), new { id = doctorId }, doctorId);
-    }
+        /// <summary>
+        /// Gets a doctor by ID.
+        /// </summary>
+        /// <param name="id">Doctor ID.</param>
+        /// <returns>Doctor details if found, otherwise 404.</returns>
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById(int id)
+        {
+            var doctor = await _service.GetByIdAsync(id);
+            return doctor == null ? NotFound() : Ok(doctor);
+        }
 
-    [HttpPut("update/{id}")]
-    public async Task<ActionResult<bool>> UpdateDoctor(int id, [FromBody] DoctorDto doctorDto)
-    {
-        if (id != doctorDto.Id) return BadRequest();
-        var result = await _doctorService.UpdateDoctorAsync(doctorDto);
-        if (!result) return NotFound();
-        return Ok(result);
-    }
+        /// <summary>
+        /// Searches for doctors by name.
+        /// </summary>
+        /// <param name="name">Doctor's name or part of it.</param>
+        /// <returns>List of matching doctors.</returns>
+        [HttpGet("search")]
+        public async Task<IActionResult> SearchByName([FromQuery] string name)
+        {
+            var result = await _service.SearchByNameAsync(name);
+            return Ok(result);
+        }
 
-    [HttpDelete("delete/{id}")]
-    public async Task<ActionResult<bool>> DeleteDoctor(int id)
-    {
-        var result = await _doctorService.DeleteDoctorAsync(id);
-        if (!result) return NotFound();
-        return Ok(result);
-    }
-    [HttpGet("search/byName")]
-    public async Task<ActionResult<IEnumerable<DoctorDto>>> SearchByName([FromQuery] string name)
-    {
-        var doctors = await _doctorService.SearchByNameAsync(name);
-        if (!doctors.Any()) return NotFound();
-        return Ok(doctors);
-    }
+        /// <summary>
+        /// Gets doctors by specialization ID.
+        /// </summary>
+        /// <param name="id">Specialization ID.</param>
+        /// <returns>List of doctors with the given specialization.</returns>
+        [HttpGet("byspecialization/{id}")]
+        public async Task<IActionResult> GetBySpecialization(int id)
+        {
+            var result = await _service.GetBySpecializationAsync(id);
+            return Ok(result);
+        }
 
-    [HttpGet("search/byEmail")]
-    public async Task<ActionResult<IEnumerable<DoctorDto>>> SearchByEmail([FromQuery] string email)
-    {
-        var doctors = await _doctorService.SearchByEmailAsync(email);
-        if (!doctors.Any()) return NotFound();
-        return Ok(doctors);
-    }
+        /// <summary>
+        /// Creates a new doctor.
+        /// </summary>
+        /// <param name="dto">Doctor creation data.</param>
+        /// <returns>Created doctor location.</returns>
+        [HttpPost]
+        public async Task<IActionResult> Create([FromBody] CreateDoctorDto dto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+            var id = await _service.AddAsync(dto);
+            return CreatedAtAction(nameof(GetById), new { id }, null);
+        }
 
-    [HttpGet("search/byPhone")]
-    public async Task<ActionResult<IEnumerable<DoctorDto>>> SearchByPhone([FromQuery] string phoneNumber)
-    {
-        var doctors = await _doctorService.SearchByPhoneAsync(phoneNumber);
-        if (!doctors.Any()) return NotFound();
-        return Ok(doctors);
-    }
+        /// <summary>
+        /// Updates an existing doctor.
+        /// </summary>
+        /// <param name="dto">Updated doctor data.</param>
+        /// <returns>No content if successful, otherwise 404.</returns>
+        [HttpPut]
+        public async Task<IActionResult> Update([FromBody] UpdateDoctorDto dto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+            var success = await _service.UpdateAsync(dto);
+            return success ? NoContent() : NotFound();
+        }
 
-    [HttpGet("search/bySpecialization")]
-    public async Task<ActionResult<IEnumerable<DoctorDto>>> GetDoctorsBySpecialization([FromQuery] int specializationId)
-    {
-        var doctors = await _doctorService.GetDoctorsBySpecializationAsync(specializationId);
-        if (!doctors.Any()) return NotFound();
-        return Ok(doctors);
+        /// <summary>
+        /// Deletes a doctor by ID.
+        /// </summary>
+        /// <param name="id">Doctor ID.</param>
+        /// <returns>No content if deleted, otherwise 404.</returns>
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var success = await _service.DeleteAsync(id);
+            return success ? NoContent() : NotFound();
+        }
     }
-
 }

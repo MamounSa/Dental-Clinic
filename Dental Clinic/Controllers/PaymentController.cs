@@ -1,61 +1,85 @@
-﻿[Route("api/payments")]
-[ApiController]
-public class PaymentController : ControllerBase
+﻿using Microsoft.AspNetCore.Mvc;
+
+namespace YourNamespace.Controllers
 {
-    private readonly IPaymentService _paymentService;
-
-    public PaymentController(IPaymentService paymentService)
+    [ApiController]
+    [Route("api/[controller]")]
+    public class PaymentController : ControllerBase
     {
-        _paymentService = paymentService;
-    }
+        private readonly IPaymentService _service;
 
-    [HttpGet("all")]
-    public async Task<ActionResult<IEnumerable<PaymentDto>>> GetAllPayments()
-    {
-        var payments = await _paymentService.GetAllPaymentsAsync();
-        if (!payments.Any()) return NotFound();
-        return Ok(payments);
-    }
+        public PaymentController(IPaymentService service)
+        {
+            _service = service;
+        }
 
-    [HttpGet("{id}")]
-    public async Task<ActionResult<PaymentDto>> GetPaymentById(int id)
-    {
-        var payment = await _paymentService.GetPaymentByIdAsync(id);
-        if (payment == null) return NotFound();
-        return Ok(payment);
-    }
+        /// <summary>
+        /// Get all payments.
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetAll()
+        {
+            var payments = await _service.GetAllAsync();
+            return Ok(payments);
+        }
 
-    [HttpPost("add")]
-    public async Task<ActionResult<int?>> AddPayment([FromBody] PaymentDto paymentDto)
-    {
-        var paymentId = await _paymentService.AddPaymentAsync(paymentDto);
-        if (paymentId == null) return BadRequest("Failed to add payment.");
-        return CreatedAtAction(nameof(GetPaymentById), new { id = paymentId }, paymentId);
-    }
+        /// <summary>
+        /// Get a payment by its ID.
+        /// </summary>
+        /// <param name="id">Payment ID</param>
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById(int id)
+        {
+            var payment = await _service.GetByIdAsync(id);
+            return payment == null ? NotFound() : Ok(payment);
+        }
 
-    [HttpPut("update/{id}")]
-    public async Task<ActionResult<bool>> UpdatePayment(int id, [FromBody] PaymentDto paymentDto)
-    {
-        if (id != paymentDto.Id) return BadRequest();
-        var result = await _paymentService.UpdatePaymentAsync(paymentDto);
-        if (!result) return NotFound();
-        return Ok(result);
-    }
+        /// <summary>
+        /// Get payments for a specific patient.
+        /// </summary>
+        /// <param name="patientId">Patient ID</param>
+        [HttpGet("bypatient/{patientId}")]
+        public async Task<IActionResult> GetByPatientId(int patientId)
+        {
+            var payments = await _service.GetByPatientIdAsync(patientId);
+            return Ok(payments);
+        }
 
-    [HttpDelete("delete/{id}")]
-    public async Task<ActionResult<bool>> DeletePayment(int id)
-    {
-        var result = await _paymentService.DeletePaymentAsync(id);
-        if (!result) return NotFound();
-        return Ok(result);
-    }
+        /// <summary>
+        /// Create a new payment record.
+        /// </summary>
+        /// <param name="dto">Payment data</param>
+        [HttpPost]
+        public async Task<IActionResult> Create([FromBody] CreatePaymentDto dto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
 
-    [HttpGet("search/byStatus")]
-    public async Task<ActionResult<IEnumerable<PaymentDto>>> SearchByStatus([FromQuery] string status)
-    {
-        var payments = await _paymentService.SearchByStatusAsync(status);
-        if (!payments.Any()) return NotFound();
-        return Ok(payments);
-    }
+            var id = await _service.AddAsync(dto);
+            return CreatedAtAction(nameof(GetById), new { id }, null);
+        }
 
+        /// <summary>
+        /// Update an existing payment.
+        /// </summary>
+        /// <param name="dto">Updated payment data</param>
+        [HttpPut]
+        public async Task<IActionResult> Update([FromBody] UpdatePaymentDto dto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            var success = await _service.UpdateAsync(dto);
+            return success ? NoContent() : NotFound();
+        }
+
+        /// <summary>
+        /// Delete a payment by ID.
+        /// </summary>
+        /// <param name="id">Payment ID</param>
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var success = await _service.DeleteAsync(id);
+            return success ? NoContent() : NotFound();
+        }
+    }
 }
