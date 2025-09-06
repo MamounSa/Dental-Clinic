@@ -11,4 +11,6 @@
     Task<AppointmentsReportDto> GetAppointmentsReportAsync(DateTime from, DateTime to, int? doctorId);
     Task<WeeklyCalendarDto> GetWeeklyCalendarAsync(DateTime anyDateInWeek, int? doctorId = null);
     Task<IEnumerable<AppointmentDto>> FilterAppointmentsAsync(AppointmentFilterDto filter);
+
+    Task<bool> UpdateAttendanceStatusAsync(UpdateAttendanceDto dto);
 }

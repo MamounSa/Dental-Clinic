@@ -2,11 +2,8 @@
 {
     public PaymentProfile()
     {
-        CreateMap<Payment, PaymentDto>()
-             .ForMember(dest => dest.PatientName, opt => opt.MapFrom(src => src.Patient.Name))
-             .ForMember(dest => dest.PaymentMethodName, opt => opt.MapFrom(src => src.PaymentMethod.MethodName));
-
         CreateMap<CreatePaymentDto, Payment>();
-        CreateMap<UpdatePaymentDto, Payment>();
+        CreateMap<UpdatePaymentDto, Payment>().ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+        CreateMap<Payment, PaymentDto>();
     }
 }

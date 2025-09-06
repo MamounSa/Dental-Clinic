@@ -16,6 +16,8 @@ public class AppointmentController : ControllerBase
     /// <summary>
     /// الحصول على جميع المواعيد.
     /// </summary>
+    /// 
+    //[Authorize]
     [HttpGet]
 
     public async Task<IActionResult> GetAll()
@@ -67,6 +69,8 @@ public class AppointmentController : ControllerBase
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
         var id = await _service.AddAsync(dto);
+        if (id == -1)
+            return BadRequest("لا يمكن إنشاء الموعد بسبب تعارض مع موعد ");
         return CreatedAtAction(nameof(GetById), new { id }, null);
     }
 
@@ -78,6 +82,8 @@ public class AppointmentController : ControllerBase
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
         var success = await _service.UpdateAsync(dto);
+        if (!success)
+            return BadRequest("لا يمكن تعديل الموعد بسبب تعارض مع موعد ");
         return success ? NoContent() : NotFound();
     }
 
@@ -112,5 +118,12 @@ public class AppointmentController : ControllerBase
     {
         var data = await _service.FilterAppointmentsAsync(filter);
         return Ok(data);
+    }
+
+    [HttpPut("attendance")]
+    public async Task<IActionResult> UpdateAttendance([FromBody] UpdateAttendanceDto dto)
+    {
+        var success = await _service.UpdateAttendanceStatusAsync(dto);
+        return success ? NoContent() : NotFound();
     }
 }

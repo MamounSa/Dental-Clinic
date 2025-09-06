@@ -35,13 +35,20 @@
 
     public async Task<int> AddAsync(CreateAppointmentDto dto)
     {
+        
         var entity = _mapper.Map<Appointment>(dto);
+        var hasConflict = await _repo.HasConflictAsync(entity);
+        if (hasConflict)
+            return -1;
         return await _repo.AddAsync(entity);
     }
 
     public async Task<bool> UpdateAsync(UpdateAppointmentDto dto)
     {
         var entity = _mapper.Map<Appointment>(dto);
+        var hasConflict = await _repo.HasConflictAsync(entity);
+        if (hasConflict)
+            return false;
         return await _repo.UpdateAsync(entity);
     }
 
@@ -74,7 +81,7 @@
         var appointments = await _repo.GetAppointmentsInRangeAsync(weekStart, weekEnd, doctorId);
 
         var grouped = appointments
-            .GroupBy(a => a.Date.Date)
+            .GroupBy(a => a.Start)
             .ToDictionary(g => g.Key, g => _mapper.Map<List<AppointmentDto>>(g.ToList()));
 
         return new WeeklyCalendarDto
@@ -96,6 +103,11 @@
         var data = await _repo.FilterAppointmentsAsync(filter);
         
         return _mapper.Map<IEnumerable<AppointmentDto>>(data);
+    }
+
+    public async Task<bool> UpdateAttendanceStatusAsync(UpdateAttendanceDto dto)
+    {
+        return await _repo.UpdateAttendanceStatusAsync(dto.AppointmentId, dto.AttendanceStatus);
     }
 
 

@@ -62,7 +62,7 @@
     {
         var query = _context.Appointments
             .Include(a => a.Doctor)
-            .Where(a => a.Date >= from && a.Date <= to);
+            .Where(a => a.Start >= from && a.Start <= to);
 
         if (doctorId.HasValue)
             query = query.Where(a => a.DoctorId == doctorId);
@@ -94,23 +94,38 @@
 
         if (filter.From.HasValue)
         {
-            var from = filter.From.Value.Date;
-            var to = filter.To ?? from.AddDays(1).AddTicks(-1);
-            query = query.Where(a => a.Date >= from && a.Date <= to);
+            var from = filter.From.Value;
+            var to = filter.To ?? from.Date.AddDays(1).AddTicks(-1);
+            query = query.Where(a => a.Start >= from && a.Start <= to);
         }
         else if (filter.To.HasValue)
         {
-            query = query.Where(a => a.Date <= filter.To.Value);
+            query = query.Where(a => a.Start <= filter.To.Value);
+        }
+
+        if (filter.FromTime.HasValue)
+        {
+            query = filter.ToTime.HasValue ? 
+                query.Where(a =>a.Start.TimeOfDay >= filter.FromTime.Value &&
+                a.Start.TimeOfDay <= filter.ToTime.Value)
+                :
+                query = query.Where(a => a.Start.TimeOfDay >= filter.FromTime.Value);
+
+        }
+        else if (filter.ToTime.HasValue)
+        {
+            query = query.Where(a => a.Start.TimeOfDay <= filter.ToTime.Value);
         }
 
         return query;
     }
 
+
     private IQueryable<Appointment> ApplySorting(IQueryable<Appointment> query, AppointmentFilterDto filter)
     {
         return filter.SortBy?.ToLower() switch
         {
-            "date" => filter.Desc ? query.OrderByDescending(a => a.Date) : query.OrderBy(a => a.Date),
+            "date" => filter.Desc ? query.OrderByDescending(a => a.Start) : query.OrderBy(a => a.Start),
             "status" => filter.Desc ? query.OrderByDescending(a => a.Status) : query.OrderBy(a => a.Status),
             "doctor" => filter.Desc ? query.OrderByDescending(a => a.DoctorId) : query.OrderBy(a => a.DoctorId),
             "patient" => filter.Desc ? query.OrderByDescending(a => a.PatientId) : query.OrderBy(a => a.PatientId),
@@ -123,6 +138,40 @@
         return query
             .Skip((filter.PageNumber - 1) * filter.PageSize)
             .Take(filter.PageSize);
+    }
+
+    public async Task<bool> HasConflictAsync(Appointment appointment)
+    {
+        return await _context.Appointments.AnyAsync(a =>
+            a.Id !=appointment.Id &&
+            (a.DoctorId == appointment.DoctorId) && a.Status=="مؤكد" &&
+            a.Start < appointment.End &&
+            a.End > appointment.Start
+        );
+    }
+    public async Task<bool> UpdateAttendanceStatusAsync(int appointmentId, AttendanceStatus status)
+    {
+        var appointment = await _context.Appointments.FindAsync(appointmentId);
+        if (appointment == null) return false;
+
+        appointment.AttendanceStatus = status;
+
+        switch (status)
+        {
+            case AttendanceStatus.CheckedIn:
+                appointment.CheckInTime = DateTime.Now;
+                break;
+            case AttendanceStatus.CheckedOut:
+                appointment.CheckOutTime = DateTime.Now;
+                break;
+            case AttendanceStatus.NoShow:
+                appointment.CheckInTime = null;
+                appointment.CheckOutTime = null;
+                break;
+        }
+
+        await _context.SaveChangesAsync();
+        return true;
     }
 
 

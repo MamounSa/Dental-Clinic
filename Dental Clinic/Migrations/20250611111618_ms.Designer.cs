@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Dental_Clinic.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250605111415_mp")]
-    partial class mp
+    [Migration("20250611111618_ms")]
+    partial class ms
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -32,14 +32,30 @@ namespace Dental_Clinic.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime>("Date")
+                    b.Property<int?>("AttendanceStatus")
+                        .HasMaxLength(50)
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("CheckInTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("CheckOutTime")
                         .HasColumnType("datetime2");
 
                     b.Property<int>("DoctorId")
                         .HasColumnType("int");
 
+                    b.Property<DateTime>("End")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("InvoiceId")
+                        .HasColumnType("int");
+
                     b.Property<int>("PatientId")
                         .HasColumnType("int");
+
+                    b.Property<DateTime>("Start")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -171,6 +187,44 @@ namespace Dental_Clinic.Migrations
                     b.ToTable("Doctors");
                 });
 
+            modelBuilder.Entity("Invoice", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("AppointmentId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("DueDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("IssueDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("PatientId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AppointmentId")
+                        .IsUnique()
+                        .HasFilter("[AppointmentId] IS NOT NULL");
+
+                    b.HasIndex("PatientId");
+
+                    b.ToTable("Invoices");
+                });
+
             modelBuilder.Entity("MedicalImage", b =>
                 {
                     b.Property<int>("Id")
@@ -289,26 +343,33 @@ namespace Dental_Clinic.Migrations
                     b.Property<decimal>("Amount")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<int>("InvoiceId")
+                        .HasColumnType("int");
+
                     b.Property<int>("PatientId")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("PaymentDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("PaymentMethodId")
+                    b.Property<int?>("PaymentMethodId")
                         .HasColumnType("int");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("PaymentType")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("InvoiceId");
 
                     b.HasIndex("PatientId");
 
                     b.HasIndex("PaymentMethodId");
 
-                    b.ToTable("Payments");
+                    b.ToTable("Payments", (string)null);
                 });
 
             modelBuilder.Entity("PaymentMethod", b =>
@@ -455,6 +516,24 @@ namespace Dental_Clinic.Migrations
                     b.Navigation("Specialization");
                 });
 
+            modelBuilder.Entity("Invoice", b =>
+                {
+                    b.HasOne("Appointment", "Appointment")
+                        .WithOne("Invoice")
+                        .HasForeignKey("Invoice", "AppointmentId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Patient", "Patient")
+                        .WithMany("Invoices")
+                        .HasForeignKey("PatientId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Appointment");
+
+                    b.Navigation("Patient");
+                });
+
             modelBuilder.Entity("MedicalImage", b =>
                 {
                     b.HasOne("MedicalRecord", "MedicalRecord")
@@ -479,21 +558,31 @@ namespace Dental_Clinic.Migrations
 
             modelBuilder.Entity("Payment", b =>
                 {
+                    b.HasOne("Invoice", "Invoice")
+                        .WithMany("Payments")
+                        .HasForeignKey("InvoiceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("Patient", "Patient")
                         .WithMany()
                         .HasForeignKey("PatientId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("PaymentMethod", "PaymentMethod")
+                    b.HasOne("PaymentMethod", null)
                         .WithMany("Payments")
-                        .HasForeignKey("PaymentMethodId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("PaymentMethodId");
+
+                    b.Navigation("Invoice");
 
                     b.Navigation("Patient");
+                });
 
-                    b.Navigation("PaymentMethod");
+            modelBuilder.Entity("Appointment", b =>
+                {
+                    b.Navigation("Invoice")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("DentalModel", b =>
@@ -504,6 +593,11 @@ namespace Dental_Clinic.Migrations
             modelBuilder.Entity("Doctor", b =>
                 {
                     b.Navigation("Appointments");
+                });
+
+            modelBuilder.Entity("Invoice", b =>
+                {
+                    b.Navigation("Payments");
                 });
 
             modelBuilder.Entity("MedicalRecord", b =>
@@ -518,6 +612,8 @@ namespace Dental_Clinic.Migrations
                     b.Navigation("Appointments");
 
                     b.Navigation("DentalModels");
+
+                    b.Navigation("Invoices");
 
                     b.Navigation("MedicalRecords")
                         .IsRequired();

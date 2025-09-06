@@ -12,5 +12,8 @@
 
     Task<IEnumerable<Appointment>> FilterAppointmentsAsync(AppointmentFilterDto filter);
 
-   
+    Task<bool> HasConflictAsync(Appointment appointment);
+
+    Task<bool> UpdateAttendanceStatusAsync(int appointmentId, AttendanceStatus status);
+
 }

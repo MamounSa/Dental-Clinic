@@ -1,9 +1,12 @@
-﻿public interface IPaymentRepository
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
+
+public interface IPaymentRepository
 {
+    Task<Payment> GetByIdAsync(int id);
+    Task<IEnumerable<Payment>> GetByInvoiceIdAsync(int invoiceId);
+    Task<IEnumerable<Payment>> GetAllAsync();
     Task<int> AddAsync(Payment payment);
     Task<bool> UpdateAsync(Payment payment);
-    Task<bool> DeleteAsync(int id);
-    Task<Payment> GetByIdAsync(int id);
-    Task<IEnumerable<Payment>> GetAllAsync();
-    Task<IEnumerable<Payment>> GetByPatientIdAsync(int patientId);
+    Task<bool> DeleteAsync(Payment payment);
 }
