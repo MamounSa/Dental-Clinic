@@ -21,6 +21,8 @@
 
     public DbSet<DentalTreatment> DentalTreatments { get; set; }
 
+    public DbSet<Invoice> Invoices { get; set; }
+
     public DbSet<User> Users { get; set; }
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {

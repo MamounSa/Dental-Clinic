@@ -15,6 +15,9 @@ public class Patient
 
     public ICollection<DentalModel> DentalModels { get; set; } = new List<DentalModel>();
 
+    public ICollection<Invoice> Invoices { get; set; } = new List<Invoice>();
+
+
     public MedicalRecord MedicalRecords { get;  set; }
 }
 

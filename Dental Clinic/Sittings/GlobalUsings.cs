@@ -13,3 +13,6 @@ global using Microsoft.AspNetCore.Authentication;
 global using Microsoft.AspNetCore.Authentication.JwtBearer;
 global using Microsoft.Extensions.DependencyInjection;
 global using Microsoft.IdentityModel.Tokens;
+global using Hangfire;
+global using Microsoft.AspNetCore.Authorization;
+global using Microsoft.AspNetCore.Mvc.Authorization;

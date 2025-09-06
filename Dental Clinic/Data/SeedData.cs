@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using System.Reflection.Emit;
 using Microsoft.EntityFrameworkCore;
 
 public static class SeedData
@@ -66,19 +67,38 @@ public static class SeedData
 
         if (!context.Appointments.Any())
         {
-            context.Appointments.AddRange(new Appointment[]
-            {
-                new Appointment { Date = new DateTime(2025, 5, 20, 14, 30, 0), Status = "مؤكد", DoctorId = 1, PatientId = 3 },
-                new Appointment { Date = new DateTime(2025, 5, 21, 10, 00, 0), Status = "ملغي", DoctorId = 2, PatientId = 5 },
-                new Appointment { Date = new DateTime(2025, 5, 22, 16, 45, 0), Status = "مكتمل", DoctorId = 3, PatientId = 7 },
-                new Appointment { Date = new DateTime(2025, 5, 23, 11, 15, 0), Status = "مؤكد", DoctorId = 4, PatientId = 8 },
-                new Appointment { Date = new DateTime(2025, 5, 24, 09, 30, 0), Status = "مؤكد", DoctorId = 5, PatientId = 10 },
-                new Appointment { Date = new DateTime(2025, 5, 25, 15, 00, 0), Status = "مكتمل", DoctorId = 6, PatientId = 2 },
-                new Appointment { Date = new DateTime(2025, 5, 26, 18, 45, 0), Status = "ملغي", DoctorId = 7, PatientId = 4 },
-                new Appointment { Date = new DateTime(2025, 5, 27, 13, 20, 0), Status = "مؤكد", DoctorId = 8, PatientId = 6 },
-                new Appointment { Date = new DateTime(2025, 5, 28, 17, 10, 0), Status = "مؤكد", DoctorId = 9, PatientId = 1 },
-                new Appointment { Date = new DateTime(2025, 5, 29, 08, 50, 0), Status = "مكتمل", DoctorId = 10, PatientId = 9 }
-            });
+            var appointments = new List<Appointment>
+    {
+        new Appointment {
+            Start = new DateTime(2025, 5, 20, 14, 30, 0),
+            End   = new DateTime(2025, 5, 20, 15, 0, 0),
+            Status = "مؤكد", DoctorId = 1, PatientId = 3
+        },
+        new Appointment {
+            Start = new DateTime(2025, 5, 21, 10, 0, 0),
+            End   = new DateTime(2025, 5, 21, 10, 30, 0),
+            Status = "ملغي", DoctorId = 2, PatientId = 5
+        },
+        new Appointment {
+            Start = new DateTime(2025, 5, 22, 16, 45, 0),
+            End   = new DateTime(2025, 5, 22, 17, 15, 0),
+            Status = "مكتمل", DoctorId = 3, PatientId = 7
+        },
+        new Appointment {
+            Start = new DateTime(2025, 5, 23, 11, 15, 0),
+            End   = new DateTime(2025, 5, 23, 11, 45, 0),
+            Status = "مؤكد", DoctorId = 4, PatientId = 8
+        },
+        new Appointment {
+            Start = new DateTime(2025, 5, 24, 9, 30, 0),
+            End   = new DateTime(2025, 5, 24, 10, 0, 0),
+            Status = "مؤكد", DoctorId = 5, PatientId = 10
+        },
+        // أضف المزيد بنفس النمط
+    };
+
+            context.Appointments.AddRange(appointments);
+            context.SaveChanges();
         }
         if (!context.PaymentMethods.Any())
         {
@@ -92,15 +112,86 @@ public static class SeedData
 
         context.SaveChanges();
 
-        if (!context.Payments.Any())
+        if (!context.Invoices.Any())
         {
-            context.Payments.AddRange(new Payment[]
+            context.Invoices.AddRange(new Invoice[]
             {
-                new Payment { Amount = 200.00m, Status = "مدفوع", PaymentDate = DateTime.UtcNow, PatientId = 1, PaymentMethodId = 1 },
-                new Payment { Amount = 150.50m, Status = "غير مدفوع", PaymentDate = DateTime.UtcNow, PatientId = 2, PaymentMethodId = 2 },
-                new Payment { Amount = 300.00m, Status = "معلق", PaymentDate = DateTime.UtcNow, PatientId = 3, PaymentMethodId = 3 }
-            });
+                new Invoice
+                {
+                    PatientId = 1,
+                    TotalAmount = 500,
+                    IssueDate = new DateTime(2025, 6, 10),
+                    DueDate = new DateTime(2025, 6, 17),
+                    Status = InvoiceStatus.Pending,
+                    AppointmentId = 1
+                },
+                new Invoice
+                {
+
+                    PatientId = 2,
+                    TotalAmount = 300,
+                    IssueDate = new DateTime(2025, 6, 5),
+                    DueDate = new DateTime(2025, 6, 12),
+                    Status = InvoiceStatus.Pending,
+                    AppointmentId = 2
+                },
+                new Invoice
+                {
+
+                    PatientId = 3,
+                    TotalAmount = 400,
+                    IssueDate = new DateTime(2025, 6, 8),
+                    DueDate = new DateTime(2025, 6, 15),
+                    Status = InvoiceStatus.Pending,
+                    AppointmentId = 3
+                },
+        });
+
+
+
         }
+        context.SaveChanges();
+
+        /*if (!context.Payments.Any())
+        {
+           // context.Payments.AddRange(new Payment[]
+            {
+                new Payment
+        {
+
+            Amount = 100,
+            Status = PaymentStatus.Paid,
+            PaymentDate = new DateTime(2025, 6, 1),
+            PatientId = 1,
+            InvoiceId = 1,
+            PaymentType = PaymentType.Cash
+        },
+                new Payment
+        {
+
+            Amount = 200,
+            Status = PaymentStatus.Pending,
+            PaymentDate = new DateTime(2025, 6, 5),
+            PatientId = 2,
+            InvoiceId = 2,
+            PaymentType = PaymentType.Online
+        },
+                new Payment
+        {
+
+
+            Amount = 0,
+            Status = PaymentStatus.Paid,
+            PaymentDate = new DateTime(2025, 6, 7),
+            PatientId = 3,
+            InvoiceId = 3,
+            PaymentType = PaymentType.Free
+        }
+            });
+        }*/
+
+
+
         context.MedicalRecords.AddRange(new MedicalRecord[]
             {
                 new MedicalRecord { RecordDate = DateTime.UtcNow.AddMonths(-3), Diagnosis = "تسوس الأسنان الحاد", Medications = "فلوريد الصوديوم، مسكنات الألم", Notes = "ضرورة حشو الأسنان وإجراء تنظيف شامل", PatientId = 1 },
@@ -121,12 +212,12 @@ public static class SeedData
             context.DentalModels.AddRange(
                 new DentalModel
                 {
-                  
+
                     ToothNumber = 11,
                     Condition = "سليم",
                     PatientId = 1,
                     MedicalRecordId = 1,
-                    
+
                 },
                 new DentalModel
                 {
@@ -134,7 +225,7 @@ public static class SeedData
                     Condition = "مسوس",
                     PatientId = 2,
                     MedicalRecordId = 2,
-                    
+
                 }
             );
             context.SaveChanges();
@@ -211,8 +302,8 @@ public static class ModelBuilderExtensions
 {
     public static void SeedUsers(this ModelBuilder modelBuilder)
     {
-     
+
     }
 
-  
+
 }

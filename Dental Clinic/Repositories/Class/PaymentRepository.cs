@@ -7,6 +7,15 @@
         _context = context;
     }
 
+    public async Task<Payment> GetByIdAsync(int id) =>
+        await _context.Payments.Include(p => p.Invoice).FirstOrDefaultAsync(p => p.Id == id);
+
+    public async Task<IEnumerable<Payment>> GetByInvoiceIdAsync(int invoiceId) =>
+        await _context.Payments.Where(p => p.InvoiceId == invoiceId).ToListAsync();
+
+    public async Task<IEnumerable<Payment>> GetAllAsync() =>
+        await _context.Payments.Include(p => p.Invoice).ToListAsync();
+
     public async Task<int> AddAsync(Payment payment)
     {
         await _context.Payments.AddAsync(payment);
@@ -16,45 +25,13 @@
 
     public async Task<bool> UpdateAsync(Payment payment)
     {
-        var existing = await _context.Payments.FindAsync(payment.Id);
-        if (existing == null) return false;
-
-        _context.Entry(existing).CurrentValues.SetValues(payment);
-        await _context.SaveChangesAsync();
-        return true;
+        _context.Payments.Update(payment);
+        return await _context.SaveChangesAsync() > 0;
     }
 
-    public async Task<bool> DeleteAsync(int id)
+    public async Task<bool> DeleteAsync(Payment payment)
     {
-        var payment = await _context.Payments.FindAsync(id);
-        if (payment == null) return false;
-
         _context.Payments.Remove(payment);
-        await _context.SaveChangesAsync();
-        return true;
-    }
-
-    public async Task<Payment> GetByIdAsync(int id)
-    {
-        return await _context.Payments
-            .Include(p => p.Patient)
-            .Include(p => p.PaymentMethod)
-            .FirstOrDefaultAsync(p => p.Id == id);
-    }
-
-    public async Task<IEnumerable<Payment>> GetAllAsync()
-    {
-        return await _context.Payments
-            .Include(p => p.Patient)
-            .Include(p => p.PaymentMethod)
-            .ToListAsync();
-    }
-
-    public async Task<IEnumerable<Payment>> GetByPatientIdAsync(int patientId)
-    {
-        return await _context.Payments
-            .Include(p => p.PaymentMethod)
-            .Where(p => p.PatientId == patientId)
-            .ToListAsync();
+        return await _context.SaveChangesAsync() > 0;
     }
 }
